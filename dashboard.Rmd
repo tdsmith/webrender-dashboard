@@ -12,7 +12,10 @@ knitr::opts_chunk$set(echo = FALSE, fig.width=10, fig.height=4, message=FALSE, w
 library(RSQLite)
 library(dplyr)
 library(ggplot2)
+library(readr)
 library(tidyr)
+
+burndown = read_csv("bugzilla.csv")
 
 cache = DBI::dbConnect(SQLite(), dbname="webrender.sqlite3")
 
@@ -32,6 +35,58 @@ last_update = metadata$last_update
 ```
 
 Last updated: `r last_update` UTC
+
+# Bug burndown
+
+P1 = Blocking beta
+
+P2 = Blocking release (being worked on or looking for owners)
+
+P3 = Blocking release (pending queue)
+
+```{r burndown_p1}
+burndown %>%
+  filter(Priority == "P1") %>%
+  ggplot(aes(Day, Count)) +
+    geom_line() +
+    labs(x="Date", title="P1 bugs") +
+    expand_limits(y=0)
+```
+[Bugzilla: P1 blockers](https://bugzilla.mozilla.org/buglist.cgi?list_id=14424815&o1=substring&v1=1386669&priority=P1&f1=blocked&resolution=---&query_format=advanced)
+
+```{r burndown_p2}
+burndown %>%
+  filter(Priority == "P2") %>%
+  ggplot(aes(Day, Count)) +
+    geom_line() +
+    labs(x="Date", title="P2 bugs") +
+    expand_limits(y=0)
+```
+
+[Bugzilla: P2 blockers](https://bugzilla.mozilla.org/buglist.cgi?list_id=14424815&o1=substring&v1=1386669&priority=P2&f1=blocked&resolution=---&query_format=advanced)
+
+```{r burndown_p3}
+burndown %>%
+  filter(Priority == "P3") %>%
+  ggplot(aes(Day, Count)) +
+    geom_line() +
+    labs(x="Date", title="P3 bugs") +
+    expand_limits(y=0)
+```
+
+[Bugzilla: P3 blockers](https://bugzilla.mozilla.org/buglist.cgi?list_id=14424815&o1=substring&v1=1386669&priority=P3&f1=blocked&resolution=---&query_format=advanced)
+
+```{r burndown_combined}
+burndown %>%
+  mutate(Priority=factor(Priority, c("P3", "P2", "P1"))) %>%
+  ggplot(aes(Day, Count, fill=Priority)) +
+    geom_area(alpha=0.8) +
+    geom_line(color="white", position="stack", size=1) +
+    labs(x="Date", title="All bugs") +
+    scale_x_date(date_breaks="1 month") +
+    scale_fill_manual(values=c(P1="#fc8d62", P2="#8da0cb", P3="#66c2a5")) +
+    theme(legend.position="bottom")
+```
 
 # Nightly summary
 
