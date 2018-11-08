@@ -1,0 +1,371 @@
+---
+title: "Webrender static dashboard"
+output:
+  html_document:
+    self_contained: false
+    df_print: "kable"
+---
+
+```{r setup, include=FALSE, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = FALSE, fig.width=10, fig.height=4, message=FALSE, warning=FALSE)
+
+library(RSQLite)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+
+cache = DBI::dbConnect(SQLite(), dbname="webrender.sqlite3")
+
+crashes_per_build = tbl(cache, "crashes_per_build") %>% collect
+crashes_per_build_per_process = tbl(cache, "crashes_per_build_per_process") %>% collect
+perf_medians = tbl(cache, "perf_medians") %>% collect
+paint_time_quantiles = tbl(cache, "paint_time_quantiles") %>% collect
+slow_content_frame_time_summary = tbl(cache, "slow_content_frame_time_summary") %>% collect
+intensity_summary = tbl(cache, "intensity_summary") %>% collect
+uri_summary = tbl(cache, "uri_summary") %>% collect
+
+enrollment_summary = tbl(cache, "enrollment_summary") %>% collect
+unenrollment_summary = tbl(cache, "unenrollment_summary") %>% collect
+
+metadata = tbl(cache, "metadata") %>% collect
+last_update = metadata$last_update
+```
+
+Last updated: `r last_update` UTC
+
+# Nightly summary
+
+Stability of the last 14 builds with at least 1,000 usage-hours/branch, combined:
+
+```{r recent_nightly_crash_summary}
+most_recent_builds = crashes_per_build %>%
+  filter(normalized_channel == "nightly") %>%
+  select(normalized_channel, app_build_id, branch, usage_hours) %>%
+  spread(branch, usage_hours) %>%
+  filter(enabled >= 1000, disabled >= 1000) %>%
+  select(normalized_channel, app_build_id) %>%
+  top_n(14, app_build_id)
+
+my_test = function(x) {
+  disabled = filter(x, branch == "disabled")
+  enabled = filter(x, branch == "enabled")
+  result = poisson.test(c(enabled$crashes, disabled$crashes), c(enabled$hours, disabled$hours), r=1)
+  data.frame(
+    vs_gecko=result$estimate,
+    ci_low=result$conf.int[1],
+    ci_high=result$conf.int[2],
+    p_value=result$p.value
+  )
+}
+
+nightly_stability = crashes_per_build %>%
+  inner_join(most_recent_builds) %>%
+  gather(metric, value, ends_with("crashes"), device_reset_reason_total) %>%
+  group_by(metric, branch) %>%
+  summarize(crashes=sum(value), hours=sum(usage_hours)) %>%
+  group_by(metric) %>%
+  do(my_test(.)) %>%
+  mutate(regression=(vs_gecko > 1) & (p_value < .05))
+
+ggplot(nightly_stability, aes(metric, vs_gecko, ymin=ci_low, ymax=ci_high, color=regression)) +
+  geom_pointrange() +
+  geom_hline(yintercept=1) +
+  scale_color_manual(values=c("TRUE"="red", "FALSE"="black"), drop=FALSE) +
+  scale_y_continuous(labels=scales::percent) +
+  expand_limits(color=TRUE, y=0) +
+  labs(x="Crash type", y="WebRender rate (% of Gecko)", title="Nightly WebRender crash rate summary (vs Gecko)")
+```
+
+```{r last_build}
+last_build_id = crashes_per_build %>%
+  filter(normalized_channel == "nightly") %>%
+  select(app_build_id, branch, usage_hours) %>%
+  spread(branch, usage_hours) %>%
+  filter(enabled >= 1000, disabled >= 1000) %>%
+  arrange(desc(app_build_id)) %>%
+  head(1) %>%
+  pull(app_build_id)
+```
+
+Performance of the last build with at least 1,000 accumulated usage hours/branch (` `r last_build_id` `):
+
+```{r recent_nightly_performance}
+quotient_seq = function(df) {
+  enabled = filter(df, branch == "enabled")
+  disabled = filter(df, branch == "disabled")
+  ratio = enabled$user_median/disabled$user_median
+  regression = enabled$log_ymin > disabled$log_ymax
+  data.frame(percent_gecko=ratio*100, regression=regression)
+}
+
+content_frame_time_exceeded = function(build_id) {
+  df = slow_content_frame_time_summary %>%
+    filter(app_build_id == build_id)
+  enabled = filter(df, branch == "enabled")
+  disabled = filter(df, branch == "disabled")
+  ratio = enabled$y/disabled$y
+  regression = enabled$ymin > disabled$ymax
+  data.frame(percent_gecko=ratio*100, regression=regression, metric="Per-user fraction CONTENT_FRAME_TIME > 200% vsync")
+}
+
+perf_medians %>%
+  filter(normalized_channel == "nightly", app_build_id == last_build_id, metric != "composite_time", metric != "content_frame_time") %>%
+  group_by(metric) %>%
+  do(quotient_seq(.)) %>%
+  bind_rows(content_frame_time_exceeded(last_build_id)) %>%
+  arrange(desc(percent_gecko)) %>%
+  mutate(percent_gecko=sprintf("%.1f%%", percent_gecko))
+```
+
+# Beta summary
+
+Stability of the last build with at least 10,000 usage-hours/branch:
+
+```{r recent_beta_crash_summary}
+most_recent_beta_builds = crashes_per_build %>%
+  filter(normalized_channel == "beta") %>%
+  select(normalized_channel, app_build_id, branch, usage_hours) %>%
+  spread(branch, usage_hours) %>%
+  filter(enabled >= 10000, disabled >= 10000) %>%
+  arrange(desc(app_build_id)) %>%
+  select(normalized_channel, app_build_id) %>%
+  top_n(1, app_build_id)
+
+last_beta_build = most_recent_beta_builds %>% pull(app_build_id)
+
+beta_stability = crashes_per_build %>%
+  inner_join(most_recent_beta_builds) %>%
+  gather(metric, value, ends_with("crashes"), device_reset_reason_total) %>%
+  group_by(metric, branch) %>%
+  summarize(crashes=sum(value), hours=sum(usage_hours)) %>%
+  group_by(metric) %>%
+  do(my_test(.)) %>%
+  mutate(regression=(vs_gecko > 1) & (p_value < .05))
+
+ggplot(beta_stability, aes(metric, vs_gecko, ymin=ci_low, ymax=ci_high, color=regression)) +
+  geom_pointrange() +
+  geom_hline(yintercept=1) +
+  scale_color_manual(values=c("TRUE"="red", "FALSE"="black"), drop=FALSE) +
+  scale_y_continuous(labels=scales::percent) +
+  expand_limits(color=TRUE, y=0) +
+  labs(x="Crash type", y="WebRender rate (% of Gecko)", title="Beta WebRender crash rate summary (vs Gecko)")
+```
+
+Performance of the last build with at least 10,000 accumulated usage hours/branch (` `r last_beta_build` `):
+
+```{r recent_beta_performance}
+perf_medians %>%
+  filter(normalized_channel == "beta", app_build_id == last_beta_build, metric != "composite_time", metric != "content_frame_time") %>%
+  group_by(metric) %>%
+  do(quotient_seq(.)) %>%
+  bind_rows(content_frame_time_exceeded(last_beta_build)) %>%
+  arrange(desc(percent_gecko)) %>%
+  mutate(percent_gecko=sprintf("%.1f%%", percent_gecko))
+```
+
+# Crash summary
+
+```{r total_crash_count}
+ggplot(crashes_per_build, aes(app_build_id, total_crashes, fill=branch)) +
+  facet_grid(~normalized_channel, space="free_x", scales="free_x", drop=TRUE) +
+  geom_col(position=position_dodge()) +
+  theme(axis.text.x=element_text(angle=45, hjust=1)) +
+  labs(x="Build ID", y="Count of all crashes", title="All crashes (main+content+gpu)")
+```
+
+
+```{r total_crash_rate}
+ggplot(crashes_per_build, aes(app_build_id, total_crashes/usage_hours*1000, fill=branch, alpha=usage_hours)) +
+  facet_grid(~normalized_channel, space="free_x", scales="free_x", drop=TRUE) +
+  geom_col(position=position_dodge()) +
+  geom_errorbar(position=position_dodge(w=1), width=0.2, mapping=aes(ymin=ymin/usage_hours*1000, ymax=ymax/usage_hours*1000)) +
+  scale_alpha_continuous(trans="log10", range=c(0.25, 1.0)) +
+  coord_cartesian(ylim=c(0, 0.1)*1000) +
+  theme(axis.text.x=element_text(angle=45, hjust=1)) +
+  labs(x="Build ID", y="Crash rate", title="Crash rate: all crashes (main+content+gpu) per 1000 usage hours")
+```
+
+# Crash detail
+
+```{r device_reset_rate}
+ggplot(crashes_per_build, aes(app_build_id, device_reset_reason_total/usage_hours*1000, fill=branch, alpha=usage_hours)) +
+  facet_grid(~normalized_channel, space="free_x", scales="free_x", drop=TRUE) +
+  geom_col(position=position_dodge()) +
+  geom_errorbar(
+    mapping=aes(
+      ymin=qchisq(0.025, 2*device_reset_reason_total)/2/usage_hours*1000,
+      ymax=qchisq(0.975, 2*(device_reset_reason_total+1))/2/usage_hours*1000
+    ),
+    width=0.2,
+    position=position_dodge(width=1)
+  ) +
+  scale_alpha_continuous(trans="log10", range=c(0.25, 1)) +
+  coord_cartesian(ylim=c(0, 0.05)*1000) +
+  theme(axis.text.x=element_text(angle=45, hjust=1)) +
+  labs(title="Device resets per 1000 usage hours", x="Build ID", y="Reset rate")
+```
+
+```{r crash_process_main}
+crashes_per_build_per_process %>%
+  filter(process == "main") %>%
+  ggplot(aes(app_build_id, total_crashes/usage_hours*1000, fill=branch, alpha=usage_hours)) +
+    facet_grid(~normalized_channel, space="free_x", scales="free_x", drop=TRUE) +
+    geom_col(position=position_dodge()) +
+    geom_errorbar(position=position_dodge(w=1), width=0.2, mapping=aes(ymin=ymin/usage_hours*1000, ymax=ymax/usage_hours*1000)) +
+    scale_alpha_continuous(trans="log10", range=c(0.25, 1)) +
+    coord_cartesian(ylim=c(0, 0.05)*1000) +
+    theme(axis.text.x=element_text(angle=45, hjust=1)) +
+    labs(x="Build ID", y="Crash rate", title="Crashes per 1000 usage-hours: main process")
+```
+
+```{r crash_process_content}
+crashes_per_build_per_process %>%
+  filter(process == "content") %>%
+  ggplot(aes(app_build_id, total_crashes/usage_hours*1000, fill=branch, alpha=usage_hours)) +
+    facet_grid(~normalized_channel, space="free_x", scales="free_x", drop=TRUE) +
+    geom_col(position=position_dodge()) +
+    geom_errorbar(position=position_dodge(w=1), width=0.2, mapping=aes(ymin=ymin/usage_hours*1000, ymax=ymax/usage_hours*1000)) +
+    scale_alpha_continuous(trans="log10", range=c(0.25, 1)) +
+    coord_cartesian(ylim=c(0, 0.1)*1000) +
+    theme(axis.text.x=element_text(angle=45, hjust=1)) +
+    labs(x="Build ID", y="Crash rate", title="Crashes per 1000 usage-hours: content process")
+```
+
+```{r crash_process_gpu}
+crashes_per_build_per_process %>%
+  filter(process == "gpu") %>%
+  ggplot(aes(app_build_id, total_crashes/usage_hours*1000, fill=branch, alpha=usage_hours)) +
+    facet_grid(~normalized_channel, space="free_x", scales="free_x", drop=TRUE) +
+    geom_col(position=position_dodge()) +
+    geom_errorbar(position=position_dodge(w=1), width=0.2, mapping=aes(ymin=ymin/usage_hours*1000, ymax=ymax/usage_hours*1000)) +
+    scale_alpha_continuous(trans="log10", range=c(0.25, 1)) +
+    coord_cartesian(ylim=c(0, 0.1)*1000) +
+    theme(axis.text.x=element_text(angle=45, hjust=1)) +
+    labs(x="Build ID", y="Crash rate", title="Crashes per 1000 usage-hours: GPU process")
+```
+
+```{r shutdown_crashes}
+ggplot(crashes_per_build, aes(app_build_id, shutdown_crashes, fill=branch, alpha=usage_hours)) +
+  facet_grid(~normalized_channel, space="free_x", scales="free_x", drop=TRUE) +
+  geom_col(position=position_dodge()) +
+  scale_alpha_continuous(trans="log10", range=c(0.25, 1)) +
+  theme(axis.text.x=element_text(angle=45, hjust=1)) +
+  labs(x="Build ID", y="Crash count", title="Shutdown crashes")
+```
+
+```{r oom_crashes}
+ggplot(crashes_per_build, aes(app_build_id, oom_crashes, fill=branch, alpha=usage_hours)) +
+  facet_grid(~normalized_channel, space="free_x", scales="free_x", drop=TRUE) +
+  geom_col(position=position_dodge()) +
+  scale_alpha_continuous(trans="log10", range=c(0.25, 1)) +
+  theme(axis.text.x=element_text(angle=45, hjust=1)) +
+  labs(x="Build ID", y="Crash count", title="OOM crashes")
+```
+
+# Performance
+
+```{r composite_time_mean}
+perf_medians %>%
+  filter(metric=="composite_time") %>%
+  ggplot(aes(app_build_id, user_median, ymin=10**log_ymin, ymax=10**log_ymax, fill=branch)) +
+    facet_grid(~normalized_channel, scales="free_x", space="free_x") +
+    geom_col(position=position_dodge()) +
+    geom_errorbar(width=0.2, position=position_dodge(width=1)) +
+    theme(axis.text.x=element_text(angle=30, hjust=1)) +
+    coord_cartesian(ylim=c(0, 5)) +
+    labs(title="COMPOSITE_TIME: per-user mean", x="Build ID", y="Median of per-user means")
+```
+
+```{r content_frame_time_mean}
+perf_medians %>%
+  filter(metric=="content_frame_time") %>%
+  ggplot(aes(app_build_id, user_median, ymin=10**log_ymin, ymax=10**log_ymax, fill=branch)) +
+    facet_grid(~normalized_channel, scales="free_x", space="free_x") +
+    geom_col(position=position_dodge()) +
+    geom_errorbar(width=0.2, position=position_dodge(width=1)) +
+    theme(axis.text.x=element_text(angle=30, hjust=1)) +
+    coord_cartesian(ylim=c(0, 200)) +
+    labs(title="CONTENT_FRAME_TIME: per-user mean", x="Build ID", y="Median of per-user means")
+```
+
+```{r content_frame_time_threshold}
+ggplot(slow_content_frame_time_summary, aes(app_build_id, y, ymin=ymin, ymax=ymax, fill=branch)) +
+  facet_grid(~normalized_channel, scales="free_x", space="free_x") +
+  geom_col(position=position_dodge()) +
+  geom_errorbar(width=0.2, position=position_dodge(width=1)) +
+  theme(axis.text.x=element_text(angle=30, hjust=1)) +
+  labs(title="CONTENT_FRAME_TIME: per-user percent of frames exceeding 192% vsync", x="Build ID", y="Median percentage")
+```
+
+```{r content_paint_time_mean}
+perf_medians %>%
+  filter(metric=="content_paint_time") %>%
+  ggplot(aes(app_build_id, user_median, ymin=10**log_ymin, ymax=10**log_ymax, fill=branch)) +
+    facet_grid(~normalized_channel, scales="free_x", space="free_x") +
+    geom_col(position=position_dodge()) +
+    geom_errorbar(width=0.2, position=position_dodge(width=1)) +
+    theme(axis.text.x=element_text(angle=30, hjust=1)) +
+    coord_cartesian(ylim=c(0, 5)) +
+    labs(title="CONTENT_PAINT_TIME: per-user mean", x="Build ID", y="Median of per-user means")
+```
+
+```{r content_paint_time_p99}
+paint_time_quantiles %>%
+  filter(quantile == 0.99) %>%
+  ggplot(aes(app_build_id, user_median, ymin=10**log_ymin, ymax=10**log_ymax, fill=branch)) +
+    facet_grid(~normalized_channel, scales="free_x", space="free_x") +
+    geom_col(position=position_dodge()) +
+    geom_errorbar(width=0.2, position=position_dodge(width=1)) +
+    theme(axis.text.x=element_text(angle=30, hjust=1)) +
+    labs(title="CONTENT_PAINT_TIME: per-user 99th %ile", x="Build ID", y="Median of per-user p99")
+```
+
+```{r tab_switch_composite_mean}
+perf_medians %>%
+  filter(metric=="tab_switch_composite") %>%
+  ggplot(aes(app_build_id, user_median, ymin=10**log_ymin, ymax=10**log_ymax, fill=branch)) +
+    facet_grid(~normalized_channel, scales="free_x", space="free_x") +
+    geom_col(position=position_dodge()) +
+    geom_errorbar(width=0.2, position=position_dodge(width=1)) +
+    theme(axis.text.x=element_text(angle=30, hjust=1)) +
+    labs(title="FX_TAB_SWITCH_COMPOSITE_E10S_MS: per-user mean", x="Build ID", y="Median of per-user means")
+```
+
+# Engagement
+
+```{r intensity}
+ggplot(intensity_summary, aes(app_build_id, y, ymin=ymin, ymax=ymax, fill=branch)) +
+  facet_grid(~normalized_channel, scales="free_x", space="free_x") +
+  geom_col(position=position_dodge()) +
+  geom_errorbar(width=0.2, position=position_dodge(width=1)) +
+  theme(axis.text.x=element_text(angle=30, hjust=1)) +
+  labs(x="Build ID", y="Median", title="Median session intensity (percent)")
+```
+
+```{r uri_active_hour}
+ggplot(uri_summary, aes(app_build_id, user_median, ymin=10**log_ymin, ymax=10**log_ymax, fill=branch)) +
+  facet_grid(~normalized_channel, scales="free_x", space="free_x") +
+  geom_col(position=position_dodge()) +
+  geom_errorbar(width=0.2, position=position_dodge(width=1)) +
+  theme(axis.text.x=element_text(angle=30, hjust=1)) +
+  labs(x="Build ID", y="Median", title="URI count per active hour")
+```
+
+# Enrollment
+
+```{r enrollment}
+ggplot(enrollment_summary, aes(as.Date(submission_date_s3, "%Y%m%d"), n, color=branch)) +
+  facet_grid(normalized_channel~., scales="free_y") +
+  geom_point() +
+  labs(x="Date", title="Enrollment events")
+```
+
+```{r unenrollment}
+unenrollment_summary %>%
+  filter(!is.na(branch)) %>%
+  ggplot(aes(as.Date(submission_date_s3, "%Y%m%d"), n, fill=reason)) +
+    facet_grid(normalized_channel~branch, scales="free_y") +
+    geom_col() +
+    theme(legend.position="bottom") +
+    labs(x="Date", title="Unenrollment events")
+```
