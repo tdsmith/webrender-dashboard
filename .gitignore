@@ -1,6 +1,7 @@
 dashboard_files/
 dashboard.html
 webrender.sqlite3
+bugzilla.csv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -149,3 +150,4 @@ vignettes/*.pdf
 
 # Shiny token, see https://shiny.rstudio.com/articles/shinyapps.html
 rsconnect/
+.Rproj.user
