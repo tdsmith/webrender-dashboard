@@ -1,9 +1,11 @@
 ---
-title: "Webrender static dashboard"
+title: "WebRender Status"
 output:
   html_document:
     self_contained: false
     df_print: "kable"
+    toc: true
+    toc_float: true
 ---
 
 ```{r setup, include=FALSE, warning=FALSE, message=FALSE}
@@ -50,6 +52,7 @@ burndown %>%
   ggplot(aes(Day, Count)) +
     geom_line() +
     labs(x="Date", title="P1 bugs") +
+    scale_x_date(date_breaks="1 month") +
     expand_limits(y=0)
 ```
 [Bugzilla: P1 blockers](https://bugzilla.mozilla.org/buglist.cgi?list_id=14424815&o1=substring&v1=1386669&priority=P1&f1=blocked&resolution=---&query_format=advanced)
@@ -60,6 +63,7 @@ burndown %>%
   ggplot(aes(Day, Count)) +
     geom_line() +
     labs(x="Date", title="P2 bugs") +
+    scale_x_date(date_breaks="1 month") +
     expand_limits(y=0)
 ```
 
@@ -71,6 +75,7 @@ burndown %>%
   ggplot(aes(Day, Count)) +
     geom_line() +
     labs(x="Date", title="P3 bugs") +
+    scale_x_date(date_breaks="1 month") +
     expand_limits(y=0)
 ```
 
