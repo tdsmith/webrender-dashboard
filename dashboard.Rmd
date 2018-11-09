@@ -95,6 +95,8 @@ ggplot(nightly_stability, aes(metric, vs_gecko, ymin=ci_low, ymax=ci_high, color
   labs(x="Crash type", y="WebRender rate (% of Gecko)", title="Nightly WebRender crash rate summary (vs Gecko)")
 ```
 
+Error bars reflect a 95% confidence interval for the ratio of Poisson rates adjusted for total usage hours.
+
 ```{r last_build}
 last_build_id = crashes_per_build %>%
   filter(normalized_channel == "nightly") %>%
@@ -192,6 +194,9 @@ ggplot(crashes_per_build, aes(app_build_id, total_crashes, fill=branch)) +
   labs(x="Build ID", y="Count of all crashes", title="All crashes (main+content+gpu)")
 ```
 
+Be cautious when interpreting crash rates from recent builds.
+We receive pings that tell us about crashes before we receive pings that tell us about usage,
+so estimates of crash rates are much higher than the true rate for the first few days builds are in the field.
 
 ```{r total_crash_rate}
 ggplot(crashes_per_build, aes(app_build_id, total_crashes/usage_hours*1000, fill=branch, alpha=usage_hours)) +
@@ -203,6 +208,11 @@ ggplot(crashes_per_build, aes(app_build_id, total_crashes/usage_hours*1000, fill
   theme(axis.text.x=element_text(angle=45, hjust=1)) +
   labs(x="Build ID", y="Crash rate", title="Crash rate: all crashes (main+content+gpu) per 1000 usage hours")
 ```
+
+Crash rate error bars reflect 95% confidence intervals for rates,
+assuming that crashes are Poisson-distributed,
+and based on received usage.
+Error bars do _not_ account for the reporting delay between crashes and non-crash usage.
 
 # Crash detail
 
@@ -292,8 +302,12 @@ perf_medians %>%
     geom_errorbar(width=0.2, position=position_dodge(width=1)) +
     theme(axis.text.x=element_text(angle=30, hjust=1)) +
     coord_cartesian(ylim=c(0, 5)) +
-    labs(title="COMPOSITE_TIME: per-user mean", x="Build ID", y="Median of per-user means")
+    labs(title="COMPOSITE_TIME [ms]: per-user mean", x="Build ID", y="Median of per-user means")
 ```
+
+Error bars reflect 95% confidence intervals for the geometric mean
+of the distribution of per-user means, treating the per-user means
+as log-normally distributed.
 
 ```{r content_frame_time_mean}
 perf_medians %>%
@@ -304,8 +318,12 @@ perf_medians %>%
     geom_errorbar(width=0.2, position=position_dodge(width=1)) +
     theme(axis.text.x=element_text(angle=30, hjust=1)) +
     coord_cartesian(ylim=c(0, 200)) +
-    labs(title="CONTENT_FRAME_TIME: per-user mean", x="Build ID", y="Median of per-user means")
+    labs(title="CONTENT_FRAME_TIME [% vsync]: per-user mean", x="Build ID", y="Median of per-user means")
 ```
+
+Error bars reflect 95% confidence intervals for the geometric mean
+of the distribution of per-user means, treating the per-user means
+as log-normally distributed.
 
 ```{r content_frame_time_threshold}
 ggplot(slow_content_frame_time_summary, aes(app_build_id, y, ymin=ymin, ymax=ymax, fill=branch)) +
@@ -316,6 +334,8 @@ ggplot(slow_content_frame_time_summary, aes(app_build_id, y, ymin=ymin, ymax=yma
   labs(title="CONTENT_FRAME_TIME: per-user percent of frames exceeding 192% vsync", x="Build ID", y="Median percentage")
 ```
 
+Error bars reflect bootstrapped 95% confidence intervals for the median.
+
 ```{r content_paint_time_mean}
 perf_medians %>%
   filter(metric=="content_paint_time") %>%
@@ -325,8 +345,12 @@ perf_medians %>%
     geom_errorbar(width=0.2, position=position_dodge(width=1)) +
     theme(axis.text.x=element_text(angle=30, hjust=1)) +
     coord_cartesian(ylim=c(0, 5)) +
-    labs(title="CONTENT_PAINT_TIME: per-user mean", x="Build ID", y="Median of per-user means")
+    labs(title="CONTENT_PAINT_TIME [ms]: per-user mean", x="Build ID", y="Median of per-user means")
 ```
+
+Error bars reflect 95% confidence intervals for the geometric mean
+of the distribution of per-user means, treating the per-user means
+as log-normally distributed.
 
 ```{r content_paint_time_p99}
 paint_time_quantiles %>%
@@ -336,8 +360,12 @@ paint_time_quantiles %>%
     geom_col(position=position_dodge()) +
     geom_errorbar(width=0.2, position=position_dodge(width=1)) +
     theme(axis.text.x=element_text(angle=30, hjust=1)) +
-    labs(title="CONTENT_PAINT_TIME: per-user 99th %ile", x="Build ID", y="Median of per-user p99")
+    labs(title="CONTENT_PAINT_TIME [ms]: per-user 99th %ile", x="Build ID", y="Median of per-user p99")
 ```
+
+Error bars reflect 95% confidence intervals for the geometric mean
+of the distribution of per-user p99s, treating the per-user p99s
+as log-normally distributed.
 
 ```{r tab_switch_composite_mean}
 perf_medians %>%
@@ -347,8 +375,12 @@ perf_medians %>%
     geom_col(position=position_dodge()) +
     geom_errorbar(width=0.2, position=position_dodge(width=1)) +
     theme(axis.text.x=element_text(angle=30, hjust=1)) +
-    labs(title="FX_TAB_SWITCH_COMPOSITE_E10S_MS: per-user mean", x="Build ID", y="Median of per-user means")
+    labs(title="FX_TAB_SWITCH_COMPOSITE_E10S_MS [ms]: per-user mean", x="Build ID", y="Median of per-user means")
 ```
+
+Error bars reflect 95% confidence intervals for the geometric mean
+of the distribution of per-user means, treating the per-user means
+as log-normally distributed.
 
 # Engagement
 
@@ -361,6 +393,8 @@ ggplot(intensity_summary, aes(app_build_id, y, ymin=ymin, ymax=ymax, fill=branch
   labs(x="Build ID", y="Median", title="Median session intensity (percent)")
 ```
 
+Error bars reflect bootstrapped 95% confidence intervals for the median.
+
 ```{r uri_active_hour}
 ggplot(uri_summary, aes(app_build_id, user_median, ymin=10**log_ymin, ymax=10**log_ymax, fill=branch)) +
   facet_grid(~normalized_channel, scales="free_x", space="free_x") +
@@ -369,6 +403,10 @@ ggplot(uri_summary, aes(app_build_id, user_median, ymin=10**log_ymin, ymax=10**l
   theme(axis.text.x=element_text(angle=30, hjust=1)) +
   labs(x="Build ID", y="Median", title="URI count per active hour")
 ```
+
+Error bars reflect 95% confidence intervals for the geometric mean
+of the distribution of per-user means, treating the per-user means
+as log-normally distributed.
 
 # Bug burndown detail
 
@@ -432,3 +470,16 @@ unenrollment_summary %>%
     theme(legend.position="bottom") +
     labs(x="Date", title="Unenrollment events")
 ```
+
+
+# Colophon
+
+This notebook follows users enrolled in the experiment `prefflip-webrender-v1-2-1492568`.
+
+Data are collected from Spark with [this Databricks notebook](https://dbc-caf9527b-e073.cloud.databricks.com/#notebook/45053/command/45057).
+
+Notebook runs [are kicked off](https://dbc-caf9527b-e073.cloud.databricks.com/#job/715)
+at 11am and 11pm UTC and rendered on
+[hala](https://mana.mozilla.org/wiki/pages/viewpage.action?pageId=81691528)
+at noon and midnight.
+The "last updated" timestamp reflects the time the ETL task terminated.
