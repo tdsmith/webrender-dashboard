@@ -336,6 +336,14 @@ ggplot(slow_content_frame_time_summary, aes(app_build_id, y, ymin=ymin, ymax=yma
 
 Error bars reflect bootstrapped 95% confidence intervals for the median.
 
+CONTENT_FRAME_TIME is expressed in percent of a vsync.
+Since display updates only occur at vsync intervals,
+all updates that take between 100% and 200% of a vsync
+appear identical to the user.
+200% is therefore a critical threshold, so it's important to know how often frames are slower than 200%.
+We actually measure the fraction of events slower than 192% of a vsync
+because, the way the histogram is defined, that's the closest bucket edge to 200%.
+
 ```{r content_paint_time_mean}
 perf_medians %>%
   filter(metric=="content_paint_time") %>%
