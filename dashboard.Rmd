@@ -490,4 +490,6 @@ Notebook runs [are kicked off](https://dbc-caf9527b-e073.cloud.databricks.com/#j
 at 11am and 11pm UTC and rendered on
 [hala](https://mana.mozilla.org/wiki/pages/viewpage.action?pageId=81691528)
 at noon and midnight.
+The RMarkdown script that renders this page lives
+[in Github](https://github.com/tdsmith/webrender-dashboard/).
 The "last updated" timestamp reflects the time the ETL task terminated.
