@@ -242,7 +242,7 @@ crashes_per_build_per_process %>%
     geom_col(position=position_dodge()) +
     geom_errorbar(position=position_dodge(w=1), width=0.2, mapping=aes(ymin=ymin/usage_hours*1000, ymax=ymax/usage_hours*1000)) +
     scale_alpha_continuous(trans="log10", range=c(0.25, 1)) +
-    coord_cartesian(ylim=c(0, 0.05)*1000) +
+    coord_cartesian(ylim=c(0, 0.02)*1000) +
     theme(axis.text.x=element_text(angle=45, hjust=1)) +
     labs(x="Build ID", y="Crash rate", title="Crashes per 1000 usage-hours: main process")
 ```
@@ -255,7 +255,7 @@ crashes_per_build_per_process %>%
     geom_col(position=position_dodge()) +
     geom_errorbar(position=position_dodge(w=1), width=0.2, mapping=aes(ymin=ymin/usage_hours*1000, ymax=ymax/usage_hours*1000)) +
     scale_alpha_continuous(trans="log10", range=c(0.25, 1)) +
-    coord_cartesian(ylim=c(0, 0.5)*1000) +
+    coord_cartesian(ylim=c(0, 0.03)*1000) +
     theme(axis.text.x=element_text(angle=45, hjust=1)) +
     labs(x="Build ID", y="Crash rate", title="Crashes per 1000 usage-hours: content process")
 ```
@@ -268,7 +268,7 @@ crashes_per_build_per_process %>%
     geom_col(position=position_dodge()) +
     geom_errorbar(position=position_dodge(w=1), width=0.2, mapping=aes(ymin=ymin/usage_hours*1000, ymax=ymax/usage_hours*1000)) +
     scale_alpha_continuous(trans="log10", range=c(0.25, 1)) +
-    coord_cartesian(ylim=c(0, 0.5)*1000) +
+    coord_cartesian(ylim=c(0, 0.03)*1000) +
     theme(axis.text.x=element_text(angle=45, hjust=1)) +
     labs(x="Build ID", y="Crash rate", title="Crashes per 1000 usage-hours: GPU process")
 ```
