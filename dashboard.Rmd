@@ -390,6 +390,22 @@ Error bars reflect 95% confidence intervals for the geometric mean
 of the distribution of per-user means, treating the per-user means
 as log-normally distributed.
 
+```{r content_full_paint_time_mean}
+perf_medians %>%
+  filter(metric=="content_full_paint_time") %>%
+  ggplot(aes(app_build_id, user_median, ymin=10**log_ymin, ymax=10**log_ymax, fill=branch)) +
+    facet_grid(~normalized_channel, scales="free_x", space="free_x") +
+    geom_col(position=position_dodge()) +
+    geom_errorbar(width=0.2, position=position_dodge(width=1)) +
+    theme(axis.text.x=element_text(angle=30, hjust=1)) +
+    coord_cartesian(ylim=c(0, 5)) +
+    labs(title="CONTENT_FULL_PAINT_TIME [ms]: per-user mean", x="Build ID", y="Median of per-user means")
+```
+
+Error bars reflect 95% confidence intervals for the geometric mean
+of the distribution of per-user means, treating the per-user means
+as log-normally distributed.
+
 # Engagement
 
 ```{r intensity}
@@ -484,7 +500,7 @@ unenrollment_summary %>%
 
 This notebook follows users enrolled in the experiment `prefflip-webrender-v1-2-1492568`.
 
-Data are collected from Spark with [this Databricks notebook](https://dbc-caf9527b-e073.cloud.databricks.com/#notebook/45053/command/45057).
+Data are collected from Spark with [this Databricks notebook](https://dbc-caf9527b-e073.cloud.databricks.com/#notebook/50618).
 
 Notebook runs [are kicked off](https://dbc-caf9527b-e073.cloud.databricks.com/#job/715)
 at 11am and 11pm UTC and rendered on
