@@ -372,7 +372,7 @@ slow_composite_time_summary %>%
 
 Error bars reflect bootstrapped 95% confidence intervals for the median.
 
-## COMPOSITE_FRAME_TIME
+## CONTENT_FRAME_TIME
 
 ```{r content_frame_time_mean}
 perf_medians %>%
