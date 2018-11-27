@@ -36,6 +36,7 @@ uri_summary = tbl(cache, "uri_summary") %>% collect
 
 enrollment_summary = tbl(cache, "enrollment_summary") %>% collect
 unenrollment_summary = tbl(cache, "unenrollment_summary") %>% collect
+users_by_build = tbl(cache, "users_by_build") %>% collect
 
 metadata = tbl(cache, "metadata") %>% collect
 last_update = metadata$last_update
@@ -619,6 +620,26 @@ unenrollment_summary %>%
     labs(x="Date", title="Unenrollment events")
 ```
 
+```{r users_by_build_beta}
+users_by_build %>%
+  filter(normalized_channel == "beta") %>%
+  ggplot(aes(app_build_id, n)) +
+    facet_grid(~branch) +
+    geom_col() +
+    theme(axis.text.x=element_text(angle=30, hjust=1)) +
+    labs(title="Users per build: beta", x="Build ID")
+```
+
+```{r users_by_build_nightly}
+users_by_build %>%
+  inner_join(recent_builds) %>%
+  filter(normalized_channel == "nightly") %>%
+  ggplot(aes(app_build_id, n)) +
+    facet_grid(~branch) +
+    geom_col() +
+    theme(axis.text.x=element_text(angle=30, hjust=1)) +
+    labs(title="Users per build: nightly", x="Build ID")
+```
 
 # Colophon
 
