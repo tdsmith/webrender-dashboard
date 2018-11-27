@@ -274,8 +274,9 @@ crashes_per_build %>%
 
 ```{r crash_process_main}
 crashes_per_build_per_process %>%
-  inner_join(recent_builds) %>%
   filter(process == "main") %>%
+  full_join(crashes_per_build %>% distinct(normalized_channel, app_build_id, branch)) %>%
+  inner_join(recent_builds) %>%
   ggplot(aes(app_build_id, total_crashes/usage_hours*1000, fill=branch, alpha=usage_hours)) +
     facet_grid(~normalized_channel, space="free_x", scales="free_x", drop=TRUE) +
     geom_col(position=position_dodge()) +
