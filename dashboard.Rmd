@@ -25,7 +25,12 @@ crashes_per_build = tbl(cache, "crashes_per_build") %>% collect
 crashes_per_build_per_process = tbl(cache, "crashes_per_build_per_process") %>% collect
 perf_medians = tbl(cache, "perf_medians") %>% collect
 paint_time_quantiles = tbl(cache, "paint_time_quantiles") %>% collect
+
 slow_content_frame_time_summary = tbl(cache, "slow_content_frame_time_summary") %>% collect
+slow_content_paint_time_summary = tbl(cache, "slow_content_paint_time_summary") %>% collect
+slow_content_full_paint_time_summary = tbl(cache, "slow_content_full_paint_time_summary") %>% collect
+slow_composite_time_summary = tbl(cache, "slow_composite_time_summary") %>% collect
+
 intensity_summary = tbl(cache, "intensity_summary") %>% collect
 uri_summary = tbl(cache, "uri_summary") %>% collect
 
@@ -315,6 +320,8 @@ crashes_per_build %>%
 
 # Performance
 
+## COMPOSITE_TIME
+
 ```{r composite_time_mean}
 perf_medians %>%
   inner_join(recent_builds) %>%
@@ -331,6 +338,21 @@ perf_medians %>%
 Error bars reflect 95% confidence intervals for the geometric mean
 of the distribution of per-user means, treating the per-user means
 as log-normally distributed.
+
+```{r slow_composite_time}
+slow_composite_time_summary %>%
+  inner_join(recent_builds) %>%
+  ggplot(aes(app_build_id, y, ymin=ymin, ymax=ymax, fill=branch)) +
+    facet_grid(~normalized_channel, scales="free_x", space="free_x") +
+    geom_col(position=position_dodge()) +
+    geom_errorbar(width=0.2, position=position_dodge(width=1)) +
+    theme(axis.text.x=element_text(angle=30, hjust=1)) +
+    labs(title="COMPOSITE_TIME: per-user percent of frames exceeding 16ms", x="Build ID", y="Median percentage")
+```
+
+Error bars reflect bootstrapped 95% confidence intervals for the median.
+
+## COMPOSITE_FRAME_TIME
 
 ```{r content_frame_time_mean}
 perf_medians %>%
@@ -350,12 +372,14 @@ of the distribution of per-user means, treating the per-user means
 as log-normally distributed.
 
 ```{r content_frame_time_threshold}
-ggplot(slow_content_frame_time_summary, aes(app_build_id, y, ymin=ymin, ymax=ymax, fill=branch)) +
-  facet_grid(~normalized_channel, scales="free_x", space="free_x") +
-  geom_col(position=position_dodge()) +
-  geom_errorbar(width=0.2, position=position_dodge(width=1)) +
-  theme(axis.text.x=element_text(angle=30, hjust=1)) +
-  labs(title="CONTENT_FRAME_TIME: per-user percent of frames exceeding 192% vsync", x="Build ID", y="Median percentage")
+slow_content_frame_time_summary %>%
+  inner_join(recent_builds) %>%
+  ggplot(aes(app_build_id, y, ymin=ymin, ymax=ymax, fill=branch)) +
+    facet_grid(~normalized_channel, scales="free_x", space="free_x") +
+    geom_col(position=position_dodge()) +
+    geom_errorbar(width=0.2, position=position_dodge(width=1)) +
+    theme(axis.text.x=element_text(angle=30, hjust=1)) +
+    labs(title="CONTENT_FRAME_TIME: per-user percent of frames exceeding 192% vsync", x="Build ID", y="Median percentage")
 ```
 
 Error bars reflect bootstrapped 95% confidence intervals for the median.
@@ -367,6 +391,8 @@ appear identical to the user.
 200% is therefore a critical threshold, so it's important to know how often frames are slower than 200%.
 We actually measure the fraction of events slower than 192% of a vsync
 because, the way the histogram is defined, that's the closest bucket edge to 200%.
+
+## CONTENT_PAINT_TIME
 
 ```{r content_paint_time_mean}
 perf_medians %>%
@@ -401,6 +427,21 @@ Error bars reflect 95% confidence intervals for the geometric mean
 of the distribution of per-user p99s, treating the per-user p99s
 as log-normally distributed.
 
+```{r slow_content_paint_time}
+slow_content_paint_time_summary %>%
+  inner_join(recent_builds) %>%
+  ggplot(aes(app_build_id, y, ymin=ymin, ymax=ymax, fill=branch)) +
+    facet_grid(~normalized_channel, scales="free_x", space="free_x") +
+    geom_col(position=position_dodge()) +
+    geom_errorbar(width=0.2, position=position_dodge(width=1)) +
+    theme(axis.text.x=element_text(angle=30, hjust=1)) +
+    labs(title="CONTENT_PAINT_TIME: per-user percent of frames exceeding 16ms", x="Build ID", y="Median percentage")
+```
+
+Error bars reflect bootstrapped 95% confidence intervals for the median.
+
+## Tab switch
+
 ```{r tab_switch_composite_mean}
 perf_medians %>%
   inner_join(recent_builds) %>%
@@ -416,6 +457,26 @@ perf_medians %>%
 Error bars reflect 95% confidence intervals for the geometric mean
 of the distribution of per-user means, treating the per-user means
 as log-normally distributed.
+
+## Page load
+
+```{r page_load_mean}
+perf_medians %>%
+  inner_join(recent_builds) %>%
+  filter(metric=="page_load_ms") %>%
+  ggplot(aes(app_build_id, user_median, ymin=10**log_ymin, ymax=10**log_ymax, fill=branch)) +
+    facet_grid(~normalized_channel, scales="free_x", space="free_x") +
+    geom_col(position=position_dodge()) +
+    geom_errorbar(width=0.2, position=position_dodge(width=1)) +
+    theme(axis.text.x=element_text(angle=30, hjust=1)) +
+    labs(title="FX_PAGE_LOAD_MS_2 [ms]: per-user mean", x="Build ID", y="Median of per-user means")
+```
+
+Error bars reflect 95% confidence intervals for the geometric mean
+of the distribution of per-user means, treating the per-user means
+as log-normally distributed.
+
+## CONTENT_FULL_PAINT_TIME
 
 ```{r content_full_paint_time_mean}
 perf_medians %>%
@@ -433,6 +494,19 @@ perf_medians %>%
 Error bars reflect 95% confidence intervals for the geometric mean
 of the distribution of per-user means, treating the per-user means
 as log-normally distributed.
+
+```{r slow_content_full_paint_time}
+slow_content_full_paint_time_summary %>%
+  inner_join(recent_builds) %>%
+  ggplot(aes(app_build_id, y, ymin=ymin, ymax=ymax, fill=branch)) +
+    facet_grid(~normalized_channel, scales="free_x", space="free_x") +
+    geom_col(position=position_dodge()) +
+    geom_errorbar(width=0.2, position=position_dodge(width=1)) +
+    theme(axis.text.x=element_text(angle=30, hjust=1)) +
+    labs(title="CONTENT_FULL_PAINT_TIME: per-user percent of frames exceeding 16ms", x="Build ID", y="Median percentage")
+```
+
+Error bars reflect bootstrapped 95% confidence intervals for the median.
 
 # Engagement
 
