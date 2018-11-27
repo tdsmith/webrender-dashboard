@@ -231,6 +231,24 @@ assuming that crashes are Poisson-distributed,
 and based on received usage.
 Error bars do _not_ account for the reporting delay between crashes and non-crash usage.
 
+```{r total_crash_rate_longitudinal}
+all_builds = crashes_per_build %>% distinct(normalized_channel, app_build_id) %>% arrange(normalized_channel, app_build_id) %>% pull(app_build_id)
+cr_labels = setNames(rep("", length(all_builds)), all_builds)
+label_idx = rep_len(c(TRUE, FALSE, FALSE, FALSE), length(all_builds))
+cr_labels[label_idx] = all_builds[label_idx]
+
+crashes_per_build %>%
+  ggplot(aes(app_build_id, total_crashes/usage_hours*1000, fill=branch, group=branch)) +
+    facet_grid(~normalized_channel, space="free_x", scales="free_x", drop=TRUE) +
+    geom_ribbon(aes(ymin=ymin/usage_hours*1000, ymax=ymax/usage_hours*1000), alpha=0.4) +
+    geom_line(aes(color=branch)) +
+    # scale_alpha_continuous(trans="log10", range=c(0.25, 1.0)) +
+    coord_cartesian(ylim=c(0, 0.1)*1000) +
+    scale_x_discrete(labels=cr_labels) +
+    theme(axis.text.x=element_text(angle=45, hjust=1)) +
+    labs(x="Build ID", y="Crash rate", title="Crash rate trend: all crashes (main+content+gpu) per 1000 usage hours")
+```
+
 # Crash detail
 
 ```{r device_reset_rate}
