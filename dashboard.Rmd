@@ -374,13 +374,13 @@ perf_medians %>%
 ```
 
 
-```{r slow_content_full_paint_time}
+```{r slow_content_full_paint_time_longitudinal}
 slow_content_full_paint_time_summary %>%
-  inner_join(recent_builds) %>%
-  ggplot(aes(app_build_id, y, ymin=ymin, ymax=ymax, fill=branch)) +
+  ggplot(aes(app_build_id, y, ymin=ymin, ymax=ymax, fill=branch, group=branch)) +
     facet_grid(~normalized_channel, scales="free_x", space="free_x") +
-    geom_col(position=position_dodge()) +
-    geom_errorbar(width=0.2, position=position_dodge(width=1)) +
+    geom_ribbon(alpha=0.3) +
+    geom_line(aes(color=branch)) +
+    scale_x_discrete(labels=cr_labels) +
     theme(axis.text.x=element_text(angle=30, hjust=1)) +
     labs(title="CONTENT_FULL_PAINT_TIME: per-user percent of frames exceeding 16ms", x="Build ID", y="Median percentage")
 ```
@@ -435,6 +435,19 @@ slow_content_paint_time_summary %>%
 ```
 
 Error bars reflect bootstrapped 95% confidence intervals for the median.
+
+#### All builds
+
+```{r slow_content_paint_time_longitudinal}
+slow_content_paint_time_summary %>%
+  ggplot(aes(app_build_id, y, ymin=ymin, ymax=ymax, fill=branch, group=branch)) +
+    facet_grid(~normalized_channel, scales="free_x", space="free_x") +
+    geom_ribbon(alpha=0.3) +
+    geom_line(aes(color=branch)) +
+    scale_x_discrete(labels=cr_labels) +
+    theme(axis.text.x=element_text(angle=30, hjust=1)) +
+    labs(title="CONTENT_PAINT_TIME: per-user percent of frames exceeding 16ms", x="Build ID", y="Median percentage")
+```
 
 ## COMPOSITE_TIME
 
