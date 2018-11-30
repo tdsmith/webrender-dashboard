@@ -21,33 +21,50 @@ burndown = read_csv("bugzilla.csv")
 
 cache = DBI::dbConnect(SQLite(), dbname="webrender.sqlite3")
 
-crashes_per_build = tbl(cache, "crashes_per_build") %>% collect
-crashes_per_build_per_process = tbl(cache, "crashes_per_build_per_process") %>% collect
-perf_medians = tbl(cache, "perf_medians") %>% collect
-paint_time_quantiles = tbl(cache, "paint_time_quantiles") %>% collect
+intake_filter = function(df) {
+  filter(
+    df,
+    !(app_build_id %in% c(
+      "20181025143507", # beta; may not have escaped mozilla?
+      "20180926142037" # crashy nightly; got respun
+      )),
+    app_build_id >= "20180924100354"
+  )
+}
 
-slow_content_frame_time_summary = tbl(cache, "slow_content_frame_time_summary") %>% collect
-slow_content_paint_time_summary = tbl(cache, "slow_content_paint_time_summary") %>% collect
-slow_content_full_paint_time_summary = tbl(cache, "slow_content_full_paint_time_summary") %>% collect
-slow_composite_time_summary = tbl(cache, "slow_composite_time_summary") %>% collect
+crashes_per_build = tbl(cache, "crashes_per_build") %>% collect %>% intake_filter
+crashes_per_build_per_process = tbl(cache, "crashes_per_build_per_process") %>% collect %>% intake_filter
+perf_medians = tbl(cache, "perf_medians") %>% collect %>% intake_filter
+paint_time_quantiles = tbl(cache, "paint_time_quantiles") %>% collect %>% intake_filter
+
+slow_content_frame_time_summary = tbl(cache, "slow_content_frame_time_summary") %>% collect %>% intake_filter
+slow_content_paint_time_summary = tbl(cache, "slow_content_paint_time_summary") %>% collect %>% intake_filter
+slow_content_full_paint_time_summary = tbl(cache, "slow_content_full_paint_time_summary") %>% collect %>% intake_filter
+slow_composite_time_summary = tbl(cache, "slow_composite_time_summary") %>% collect %>% intake_filter
 
 intensity_summary = tbl(cache, "intensity_summary") %>% collect
 uri_summary = tbl(cache, "uri_summary") %>% collect
 
 enrollment_summary = tbl(cache, "enrollment_summary") %>% collect
 unenrollment_summary = tbl(cache, "unenrollment_summary") %>% collect
-users_by_build = tbl(cache, "users_by_build") %>% collect
+users_by_build = tbl(cache, "users_by_build") %>% collect  %>% intake_filter
 
 metadata = tbl(cache, "metadata") %>% collect
 last_update = metadata$last_update
 
 # --
 
-all_builds = perf_medians %>% distinct(normalized_channel, app_build_id) %>% ungroup
+all_build_df = perf_medians %>% distinct(normalized_channel, app_build_id) %>% ungroup
 recent_builds = bind_rows(
-  all_builds %>% filter(normalized_channel == "nightly") %>% top_n(14, app_build_id),
-  all_builds %>% filter(normalized_channel == "beta") %>% top_n(5, app_build_id)
+  all_build_df %>% filter(normalized_channel == "nightly") %>% top_n(14, app_build_id),
+  all_build_df %>% filter(normalized_channel == "beta") %>% top_n(5, app_build_id)
 )
+
+all_builds = all_build_df %>% arrange(normalized_channel, app_build_id) %>% pull(app_build_id)
+cr_labels = setNames(rep("", length(all_builds)), all_builds)
+# Sample every 4th build for longitudinal legends
+label_idx = rep_len(c(TRUE, FALSE, FALSE, FALSE), length(all_builds))
+cr_labels[label_idx] = all_builds[label_idx]
 ```
 
 Last updated: `r last_update` UTC
@@ -273,7 +290,7 @@ slow_content_frame_time_summary %>%
     scale_x_discrete(labels=cr_labels) +
     theme(axis.text.x=element_text(angle=30, hjust=1)) +
     labs(title="CONTENT_FRAME_TIME: per-user percent of frames exceeding 192% vsync", x="Build ID", y="Median percentage") +
-    ylim(0, 6)
+    coord_cartesian(ylim=c(0, 6))
 ```
 
 Error bars reflect bootstrapped 95% confidence intervals for the median.
