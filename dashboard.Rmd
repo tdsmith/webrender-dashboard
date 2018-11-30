@@ -286,23 +286,6 @@ Error bars reflect bootstrapped 95% confidence intervals for the median.
 
 ## CONTENT_FRAME_TIME
 
-```{r content_frame_time_mean}
-perf_medians %>%
-  inner_join(recent_builds) %>%
-  filter(metric=="content_frame_time") %>%
-  ggplot(aes(app_build_id, user_median, ymin=10**log_ymin, ymax=10**log_ymax, fill=branch)) +
-    facet_grid(~normalized_channel, scales="free_x", space="free_x") +
-    geom_col(position=position_dodge()) +
-    geom_errorbar(width=0.2, position=position_dodge(width=1)) +
-    theme(axis.text.x=element_text(angle=30, hjust=1)) +
-    coord_cartesian(ylim=c(0, 200)) +
-    labs(title="CONTENT_FRAME_TIME [% vsync]: per-user mean", x="Build ID", y="Median of per-user means")
-```
-
-Error bars reflect 95% confidence intervals for the geometric mean
-of the distribution of per-user means, treating the per-user means
-as log-normally distributed.
-
 ```{r content_frame_time_threshold}
 slow_content_frame_time_summary %>%
   inner_join(recent_builds) %>%
