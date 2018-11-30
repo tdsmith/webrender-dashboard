@@ -219,6 +219,8 @@ perf_medians %>%
 
 ## CONTENT_FRAME_TIME
 
+### Recent builds
+
 ```{r content_frame_time_threshold}
 slow_content_frame_time_summary %>%
   inner_join(recent_builds) %>%
@@ -229,6 +231,8 @@ slow_content_frame_time_summary %>%
     theme(axis.text.x=element_text(angle=30, hjust=1)) +
     labs(title="CONTENT_FRAME_TIME: per-user percent of frames exceeding 192% vsync", x="Build ID", y="Median percentage")
 ```
+
+### All builds
 
 ```{r content_frame_time_longitudinal}
 slow_content_frame_time_summary %>%
@@ -254,6 +258,8 @@ because, the way the histogram is defined, that's the closest bucket edge to 200
 
 ## Tab switch
 
+### Recent builds
+
 ```{r tab_switch_composite_mean}
 perf_medians %>%
   inner_join(recent_builds) %>%
@@ -266,13 +272,10 @@ perf_medians %>%
     labs(title="FX_TAB_SWITCH_COMPOSITE_E10S_MS [ms]: per-user mean", x="Build ID", y="Median of per-user means")
 ```
 
-Error bars reflect 95% confidence intervals for the geometric mean
-of the distribution of per-user means, treating the per-user means
-as log-normally distributed.
+### All builds
 
 ```{r tab_switch_composite_mean_longitudinal}
 perf_medians %>%
-  inner_join(recent_builds) %>%
   filter(metric=="tab_switch_composite") %>%
   ggplot(aes(app_build_id, user_median, ymin=10**log_ymin, ymax=10**log_ymax, fill=branch, group=branch)) +
     facet_grid(~normalized_channel, scales="free_x", space="free_x") +
@@ -280,8 +283,13 @@ perf_medians %>%
     geom_line(aes(color=branch)) +
     theme(axis.text.x=element_text(angle=30, hjust=1)) +
     scale_x_discrete(labels=cr_labels) +
-    labs(title="FX_TAB_SWITCH_COMPOSITE_E10S_MS [ms]: per-user mean", x="Build ID", y="Median of per-user means")
+    labs(title="FX_TAB_SWITCH_COMPOSITE_E10S_MS [ms]: per-user mean", x="Build ID", y="Median of per-user means") +
+    coord_cartesian(ylim=c(25, 75))
 ```
+
+Error bars reflect 95% confidence intervals for the geometric mean
+of the distribution of per-user means, treating the per-user means
+as log-normally distributed.
 
 ## Page load
 
