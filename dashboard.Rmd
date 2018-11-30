@@ -243,7 +243,6 @@ crashes_per_build %>%
     facet_grid(~normalized_channel, space="free_x", scales="free_x", drop=TRUE) +
     geom_ribbon(aes(ymin=ymin/usage_hours*1000, ymax=ymax/usage_hours*1000), alpha=0.4) +
     geom_line(aes(color=branch)) +
-    # scale_alpha_continuous(trans="log10", range=c(0.25, 1.0)) +
     coord_cartesian(ylim=c(0, 0.1)*1000) +
     scale_x_discrete(labels=cr_labels) +
     theme(axis.text.x=element_text(angle=45, hjust=1)) +
@@ -263,6 +262,18 @@ slow_content_frame_time_summary %>%
     geom_errorbar(width=0.2, position=position_dodge(width=1)) +
     theme(axis.text.x=element_text(angle=30, hjust=1)) +
     labs(title="CONTENT_FRAME_TIME: per-user percent of frames exceeding 192% vsync", x="Build ID", y="Median percentage")
+```
+
+```{r content_frame_time_longitudinal}
+slow_content_frame_time_summary %>%
+  ggplot(aes(app_build_id, y, ymin=ymin, ymax=ymax, fill=branch, group=branch)) +
+    facet_grid(~normalized_channel, scales="free_x", space="free_x") +
+    geom_ribbon(alpha=0.4) +
+    geom_line(aes(color=branch)) +
+    scale_x_discrete(labels=cr_labels) +
+    theme(axis.text.x=element_text(angle=30, hjust=1)) +
+    labs(title="CONTENT_FRAME_TIME: per-user percent of frames exceeding 192% vsync", x="Build ID", y="Median percentage") +
+    ylim(0, 6)
 ```
 
 Error bars reflect bootstrapped 95% confidence intervals for the median.
@@ -293,6 +304,19 @@ Error bars reflect 95% confidence intervals for the geometric mean
 of the distribution of per-user means, treating the per-user means
 as log-normally distributed.
 
+```{r tab_switch_composite_mean_longitudinal}
+perf_medians %>%
+  inner_join(recent_builds) %>%
+  filter(metric=="tab_switch_composite") %>%
+  ggplot(aes(app_build_id, user_median, ymin=10**log_ymin, ymax=10**log_ymax, fill=branch, group=branch)) +
+    facet_grid(~normalized_channel, scales="free_x", space="free_x") +
+    geom_ribbon(alpha=0.3) +
+    geom_line(aes(color=branch)) +
+    theme(axis.text.x=element_text(angle=30, hjust=1)) +
+    scale_x_discrete(labels=cr_labels) +
+    labs(title="FX_TAB_SWITCH_COMPOSITE_E10S_MS [ms]: per-user mean", x="Build ID", y="Median of per-user means")
+```
+
 ## Page load
 
 ```{r page_load_mean}
@@ -311,6 +335,19 @@ Error bars reflect 95% confidence intervals for the geometric mean
 of the distribution of per-user means, treating the per-user means
 as log-normally distributed.
 
+```{r page_load_mean_longitudinal}
+perf_medians %>%
+  inner_join(recent_builds) %>%
+  filter(metric=="page_load_ms") %>%
+  ggplot(aes(app_build_id, user_median, ymin=10**log_ymin, ymax=10**log_ymax, fill=branch, group=branch)) +
+    facet_grid(~normalized_channel, scales="free_x", space="free_x") +
+    geom_ribbon(alpha=0.3) +
+    geom_line(aes(color=branch)) +
+    theme(axis.text.x=element_text(angle=30, hjust=1)) +
+    scale_x_discrete(labels=cr_labels) +
+    labs(title="FX_PAGE_LOAD_MS_2 [ms]: per-user mean", x="Build ID", y="Median of per-user means")
+```
+
 ## CONTENT_FULL_PAINT_TIME
 
 ```{r content_full_paint_time_mean}
@@ -323,6 +360,19 @@ perf_medians %>%
     geom_errorbar(width=0.2, position=position_dodge(width=1)) +
     theme(axis.text.x=element_text(angle=30, hjust=1)) +
     coord_cartesian(ylim=c(0, 5)) +
+    labs(title="CONTENT_FULL_PAINT_TIME [ms]: per-user mean", x="Build ID", y="Median of per-user means")
+```
+
+```{r content_full_paint_mean_longitudinal}
+perf_medians %>%
+  inner_join(recent_builds) %>%
+  filter(metric=="content_full_paint_time") %>%
+  ggplot(aes(app_build_id, user_median, ymin=10**log_ymin, ymax=10**log_ymax, fill=branch, group=branch)) +
+    facet_grid(~normalized_channel, scales="free_x", space="free_x") +
+    geom_ribbon(alpha=0.3) +
+    geom_line(aes(color=branch)) +
+    theme(axis.text.x=element_text(angle=30, hjust=1)) +
+    scale_x_discrete(labels=cr_labels) +
     labs(title="CONTENT_FULL_PAINT_TIME [ms]: per-user mean", x="Build ID", y="Median of per-user means")
 ```
 
