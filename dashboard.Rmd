@@ -399,7 +399,6 @@ perf_medians %>%
     geom_col(position=position_dodge()) +
     geom_errorbar(width=0.2, position=position_dodge(width=1)) +
     theme(axis.text.x=element_text(angle=30, hjust=1)) +
-    coord_cartesian(ylim=c(0, 5)) +
     labs(title="CONTENT_PAINT_TIME [ms]: per-user mean", x="Build ID", y="Median of per-user means")
 ```
 
@@ -437,6 +436,32 @@ slow_content_paint_time_summary %>%
 Error bars reflect bootstrapped 95% confidence intervals for the median.
 
 #### All builds
+
+```{r content_paint_time_mean_longitudinal}
+perf_medians %>%
+  filter(metric=="content_paint_time") %>%
+  ggplot(aes(app_build_id, user_median, ymin=10**log_ymin, ymax=10**log_ymax, fill=branch, group=branch)) +
+    facet_grid(~normalized_channel, scales="free_x", space="free_x") +
+    geom_ribbon(alpha=0.3) +
+    geom_line(aes(color=branch)) +
+    scale_x_discrete(labels=cr_labels) +
+    theme(axis.text.x=element_text(angle=30, hjust=1)) +
+    labs(title="CONTENT_PAINT_TIME [ms]: per-user mean", x="Build ID", y="Median of per-user means")
+```
+
+
+```{r content_paint_time_p99_longitudinal}
+paint_time_quantiles %>%
+  filter(quantile == 0.99) %>%
+  ggplot(aes(app_build_id, user_median, ymin=10**log_ymin, ymax=10**log_ymax, fill=branch, group=branch)) +
+    facet_grid(~normalized_channel, scales="free_x", space="free_x") +
+    geom_ribbon(alpha=0.3) +
+    geom_line(aes(color=branch)) +
+    scale_x_discrete(labels=cr_labels) +
+    theme(axis.text.x=element_text(angle=30, hjust=1)) +
+    labs(title="CONTENT_PAINT_TIME [ms]: per-user 99th %ile", x="Build ID", y="Median of per-user p99")
+```
+
 
 ```{r slow_content_paint_time_longitudinal}
 slow_content_paint_time_summary %>%
