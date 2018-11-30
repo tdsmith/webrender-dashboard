@@ -283,8 +283,7 @@ perf_medians %>%
     geom_line(aes(color=branch)) +
     theme(axis.text.x=element_text(angle=30, hjust=1)) +
     scale_x_discrete(labels=cr_labels) +
-    labs(title="FX_TAB_SWITCH_COMPOSITE_E10S_MS [ms]: per-user mean", x="Build ID", y="Median of per-user means") +
-    coord_cartesian(ylim=c(25, 75))
+    labs(title="FX_TAB_SWITCH_COMPOSITE_E10S_MS [ms]: per-user mean", x="Build ID", y="Median of per-user means")
 ```
 
 Error bars reflect 95% confidence intervals for the geometric mean
@@ -311,10 +310,10 @@ as log-normally distributed.
 
 ```{r page_load_mean_longitudinal}
 perf_medians %>%
-  inner_join(recent_builds) %>%
   filter(metric=="page_load_ms") %>%
+  filter(app_build_id > "20181122") %>%  # initial implementation was wrong
   ggplot(aes(app_build_id, user_median, ymin=10**log_ymin, ymax=10**log_ymax, fill=branch, group=branch)) +
-    facet_grid(~normalized_channel, scales="free_x", space="free_x") +
+    facet_grid(~normalized_channel, scales="free_x", space="free_x", drop=TRUE) +
     geom_ribbon(alpha=0.3) +
     geom_line(aes(color=branch)) +
     theme(axis.text.x=element_text(angle=30, hjust=1)) +
