@@ -722,9 +722,9 @@ burndown %>%
 
 # Enrollment
 
-```{r enrollment}
+```{r enrollment, fig.height=4}
 ggplot(enrollment_summary, aes(as.Date(submission_date_s3, "%Y%m%d"), n, color=branch)) +
-  facet_grid(normalized_channel~., scales="free_y") +
+  facet_grid(normalized_channel~slug, scales="free_y") +
   geom_point() +
   labs(x="Date", title="Enrollment events")
 ```
@@ -733,7 +733,7 @@ ggplot(enrollment_summary, aes(as.Date(submission_date_s3, "%Y%m%d"), n, color=b
 unenrollment_summary %>%
   filter(!is.na(branch)) %>%
   ggplot(aes(as.Date(submission_date_s3, "%Y%m%d"), n, fill=reason)) +
-    facet_grid(normalized_channel~branch, scales="free_y") +
+    facet_grid(normalized_channel~slug+branch, scales="free_y") +
     geom_col() +
     theme(legend.position="bottom") +
     labs(x="Date", title="Unenrollment events")
@@ -744,7 +744,7 @@ Counts of users submitting pings considered for performance and crash metrics:
 ```{r users_by_build_beta}
 users_by_build %>%
   filter(normalized_channel == "beta") %>%
-  ggplot(aes(app_build_id, n)) +
+  ggplot(aes(app_build_id, n, fill=factor(experiment))) +
     facet_grid(~branch) +
     geom_col() +
     theme(axis.text.x=element_text(angle=30, hjust=1)) +
@@ -755,7 +755,7 @@ users_by_build %>%
 users_by_build %>%
   # inner_join(recent_builds) %>%
   filter(normalized_channel == "nightly") %>%
-  ggplot(aes(app_build_id, n)) +
+  ggplot(aes(app_build_id, n, fill=factor(experiment))) +
     facet_grid(~branch) +
     geom_col() +
     theme(axis.text.x=element_text(angle=30, hjust=1)) +
