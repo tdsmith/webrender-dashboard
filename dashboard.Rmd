@@ -69,6 +69,8 @@ cr_labels[label_idx] = all_builds[label_idx]
 
 Last updated: `r last_update` UTC
 
+# Executive summary
+
 ```{r burndown_combined}
 burndown %>%
   mutate(Priority=factor(Priority, c("P3", "P2", "P1"))) %>%
@@ -83,7 +85,7 @@ burndown %>%
 
 **P1**: Blocking beta; **P2**: Blocking release (in progress/looking for owners); **P3**: Blocking release (in queue)
 
-# Nightly summary
+## Nightly summary
 
 Stability of the last 14 builds with at least 1,000 usage-hours/branch, combined:
 
@@ -169,7 +171,7 @@ perf_medians %>%
   mutate(percent_gecko=sprintf("%.1f%%", percent_gecko))
 ```
 
-# Beta summary
+## Beta summary
 
 Stability of the last build with at least 10,000 usage-hours/branch:
 
@@ -214,6 +216,8 @@ perf_medians %>%
   arrange(desc(percent_gecko)) %>%
   mutate(percent_gecko=sprintf("%.1f%%", percent_gecko))
 ```
+
+<hr style="border: solid black 1px;">
 
 # Performance
 
