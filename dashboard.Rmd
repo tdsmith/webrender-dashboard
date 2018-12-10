@@ -28,7 +28,9 @@ intake_filter = function(df) {
       "20181025143507", # beta; may not have escaped mozilla?
       "20180926142037" # crashy nightly; got respun
       )),
-    app_build_id >= "20180924100354"
+    app_build_id >= "20180924100354",
+    # FIXME when 65 goes to beta
+    (normalized_channel != "beta") | (app_build_id <= "20181128185223")
   )
 }
 
