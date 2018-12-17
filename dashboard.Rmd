@@ -6,6 +6,8 @@ output:
     df_print: "kable"
     toc: true
     toc_float: true
+params:
+  dbname: "webrender.sqlite3"
 ---
 
 ```{r setup, include=FALSE, warning=FALSE, message=FALSE}
@@ -19,7 +21,7 @@ library(tidyr)
 
 burndown = read_csv("bugzilla.csv")
 
-cache = DBI::dbConnect(SQLite(), dbname="webrender.sqlite3")
+cache = DBI::dbConnect(SQLite(), dbname=params$dbname)
 
 intake_filter = function(df) {
   filter(
@@ -773,3 +775,5 @@ at noon and midnight.
 The RMarkdown script that renders this page lives
 [in Github](https://github.com/tdsmith/webrender-dashboard/).
 The "last updated" timestamp reflects the time the ETL task terminated.
+
+Database: `r params$dbname`
