@@ -764,7 +764,9 @@ users_by_build %>%
 
 Please direct questions to tdsmith or the Product Data Science team.
 
-This report follows users enrolled in the experiment `prefflip-webrender-v1-2-1492568`.
+This report follows users enrolled in the experiments
+`prefflip-webrender-v1-2-1492568` and
+`prefflip-webrender-v1-3-1492568`.
 
 Data are collected from Spark with [this Databricks notebook](https://dbc-caf9527b-e073.cloud.databricks.com/#notebook/50618).
 
