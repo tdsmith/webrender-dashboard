@@ -32,7 +32,7 @@ intake_filter = function(df) {
       )),
     app_build_id >= "20180924100354",
     # FIXME when 65 goes to beta
-    (normalized_channel != "beta") | (app_build_id <= "20181128185223")
+    (normalized_channel != "beta") | (app_build_id <= "20181128185223") | (app_build_id >= "20181210000000")
   )
 }
 
