@@ -90,7 +90,7 @@ burndown %>%
     theme(legend.position="bottom")
 ```
 
-**P1**: Blocking beta; **P2**: Blocking release (in progress/looking for owners); **P3**: Blocking release (in queue)
+**[P1][p1]**: Blocking beta; **[P2][p2]**: Blocking release (in progress/looking for owners); **[P3][p3]**: Blocking release (in queue)
 
 ## Nightly performance
 
@@ -690,7 +690,7 @@ burndown %>%
     scale_x_date(date_breaks="1 month") +
     expand_limits(y=0)
 ```
-[Bugzilla: P1 blockers](https://bugzilla.mozilla.org/buglist.cgi?list_id=14424815&o1=substring&v1=1386669&priority=P1&f1=blocked&resolution=---&query_format=advanced)
+[Bugzilla: P1 blockers][p1]
 
 ```{r burndown_p2}
 burndown %>%
@@ -702,7 +702,7 @@ burndown %>%
     expand_limits(y=0)
 ```
 
-[Bugzilla: P2 blockers](https://bugzilla.mozilla.org/buglist.cgi?list_id=14424815&o1=substring&v1=1386669&priority=P2&f1=blocked&resolution=---&query_format=advanced)
+[Bugzilla: P2 blockers][p2]
 
 ```{r burndown_p3}
 burndown %>%
@@ -714,7 +714,7 @@ burndown %>%
     expand_limits(y=0)
 ```
 
-[Bugzilla: P3 blockers](https://bugzilla.mozilla.org/buglist.cgi?list_id=14424815&o1=substring&v1=1386669&priority=P3&f1=blocked&resolution=---&query_format=advanced)
+[Bugzilla: P3 blockers][p3]
 
 
 # Enrollment
@@ -779,3 +779,7 @@ The RMarkdown script that renders this page lives
 The "last updated" timestamp reflects the time the ETL task terminated.
 
 Database: `r params$dbname`
+
+[p1]: https://bugzilla.mozilla.org/buglist.cgi?o1=substring&v1=1386669&priority=P1&f1=blocked&resolution=---&query_format=advanced
+[p2]: https://bugzilla.mozilla.org/buglist.cgi?o1=substring&v1=1386669&priority=P2&f1=blocked&resolution=---&query_format=advanced
+[p3]: https://bugzilla.mozilla.org/buglist.cgi?o1=substring&v1=1386669&priority=P3&f1=blocked&resolution=---&query_format=advanced
