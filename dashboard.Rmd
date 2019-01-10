@@ -42,6 +42,7 @@ perf_medians = tbl(cache, "perf_medians") %>% collect %>% intake_filter
 paint_time_quantiles = tbl(cache, "paint_time_quantiles") %>% collect %>% intake_filter
 
 slow_content_frame_time_summary = tbl(cache, "slow_content_frame_time_summary") %>% collect %>% intake_filter
+slow_content_frame_time_vsync_summary = tbl(cache, "slow_content_frame_time_vsync_summary") %>% collect %>% intake_filter
 slow_content_paint_time_summary = tbl(cache, "slow_content_paint_time_summary") %>% collect %>% intake_filter
 slow_content_full_paint_time_summary = tbl(cache, "slow_content_full_paint_time_summary") %>% collect %>% intake_filter
 slow_composite_time_summary = tbl(cache, "slow_composite_time_summary") %>% collect %>% intake_filter
@@ -120,6 +121,7 @@ Performance of the last build with at least 1,000 accumulated usage hours/branch
 
 ```{r nightly_performance}
 nightly_perf_summary %>%
+  filter(metric != "content_frame_time_vsync") %>%
   arrange(desc(y)) %>%
   mutate(`95% CI`=sprintf("(%.1f, %.1f)", ymin, ymax)) %>%
   mutate(y=sprintf("%.1f%%", y)) %>%
@@ -134,6 +136,7 @@ Performance of the last build with at least 10,000 accumulated usage hours/branc
 
 ```{r recent_beta_performance}
 beta_perf_summary %>%
+  filter(metric != "content_frame_time_vsync") %>%
   arrange(desc(y)) %>%
   mutate(`95% CI`=sprintf("(%.1f%%, %.1f%%)", ymin, ymax)) %>%
   mutate(y=sprintf("%.1f%%", y)) %>%
@@ -184,6 +187,43 @@ appear identical to the user.
 200% is therefore a critical threshold, so it's important to know how often frames are slower than 200%.
 We actually measure the fraction of events slower than 192% of a vsync
 because, the way the histogram is defined, that's the closest bucket edge to 200%.
+
+## CONTENT_FRAME_TIME_VSYNC
+
+#### Recent builds
+
+```{r content_frame_time_vsync_threshold}
+slow_content_frame_time_vsync_summary %>%
+  inner_join(recent_builds) %>%
+  ggplot(aes(app_build_id, y, ymin=ymin, ymax=ymax, fill=branch)) +
+    facet_grid(~normalized_channel, scales="free_x", space="free_x") +
+    geom_col(position=position_dodge()) +
+    geom_errorbar(width=0.2, position=position_dodge(width=1)) +
+    theme(axis.text.x=element_text(angle=30, hjust=1)) +
+    labs(title="CONTENT_FRAME_TIME_VSYNC: per-user percent of frames exceeding 200% vsync", x="Build ID", y="Median percentage")
+```
+
+#### All builds
+
+```{r content_frame_time_vsync_longitudinal}
+slow_content_frame_time_vsync_summary %>%
+  ggplot(aes(app_build_id, y, ymin=ymin, ymax=ymax, fill=branch, group=branch)) +
+    facet_grid(~normalized_channel, scales="free_x", space="free_x") +
+    geom_ribbon(alpha=0.4) +
+    geom_line(aes(color=branch)) +
+    scale_x_discrete(labels=cr_labels) +
+    theme(axis.text.x=element_text(angle=30, hjust=1)) +
+    labs(title="CONTENT_FRAME_TIME_VSYNC: per-user percent of frames exceeding 200% vsync", x="Build ID", y="Median percentage") +
+    coord_cartesian(ylim=c(0, 12))
+```
+
+Error bars reflect bootstrapped 95% confidence intervals for the median.
+
+CONTENT_FRAME_TIME_VSYNC is expressed in percent of a vsync.
+Since display updates only occur at vsync intervals,
+all updates that take between 100% and 200% of a vsync
+appear identical to the user.
+200% is therefore a critical threshold, so it's important to know how often frames are slower than 200%.
 
 ## Tab switch
 
