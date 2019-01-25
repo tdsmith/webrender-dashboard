@@ -70,8 +70,8 @@ recent_builds = bind_rows(
 
 all_builds = all_build_df %>% arrange(normalized_channel, app_build_id) %>% pull(app_build_id)
 cr_labels = setNames(rep("", length(all_builds)), all_builds)
-# Sample every 4th build for longitudinal legends
-label_idx = rep_len(c(TRUE, FALSE, FALSE, FALSE), length(all_builds))
+# Sample every 5th build for longitudinal legends
+label_idx = rep_len(c(TRUE, FALSE, FALSE, FALSE, FALSE), length(all_builds))
 cr_labels[label_idx] = all_builds[label_idx]
 ```
 
