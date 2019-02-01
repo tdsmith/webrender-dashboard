@@ -1,6 +1,6 @@
-dashboard_files/
-dashboard.html
-webrender.sqlite3
+dashboard_*files/
+dashboard_*.html
+webrender_*.sqlite3
 bugzilla.csv
 
 # Byte-compiled / optimized / DLL files
