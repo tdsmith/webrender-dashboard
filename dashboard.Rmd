@@ -19,6 +19,18 @@ library(ggplot2)
 library(readr)
 library(tidyr)
 
+ensure = function(df, ...) {
+  if(nrow(df) == 0) return(df)
+  cols = list(...)
+  for(col in cols) {
+    if(!(col %in% colnames(df))) {
+      df = data.frame(df)
+      df[, col] = NA
+    }
+  }
+  df
+}
+
 burndown = read_csv("bugzilla.csv")
 
 cache = DBI::dbConnect(SQLite(), dbname=params$dbname)
@@ -100,6 +112,7 @@ last_build_id = crashes_per_build %>%
   filter(normalized_channel == "nightly") %>%
   select(app_build_id, branch, usage_hours) %>%
   spread(branch, usage_hours) %>%
+  ensure("enabled", "disabled") %>%
   filter(enabled >= 1000, disabled >= 1000) %>%
   arrange(desc(app_build_id)) %>%
   head(1) %>%
@@ -109,6 +122,7 @@ most_recent_beta_builds = crashes_per_build %>%
   filter(normalized_channel == "beta") %>%
   select(normalized_channel, app_build_id, branch, usage_hours) %>%
   spread(branch, usage_hours) %>%
+  ensure("enabled", "disabled") %>%
   filter(enabled >= 10000, disabled >= 10000) %>%
   arrange(desc(app_build_id)) %>%
   select(normalized_channel, app_build_id) %>%
