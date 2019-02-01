@@ -31,6 +31,14 @@ ensure = function(df, ...) {
   df
 }
 
+min_build_id = c(
+  nvidia="20180924100354",
+  amd="20190130000000",
+  intel="20190201000000"
+)
+
+mfr = sub(".*webrender_([^.]+).sqlite3", "\\1", params$dbname)
+
 burndown = read_csv("bugzilla.csv")
 
 cache = DBI::dbConnect(SQLite(), dbname=params$dbname)
@@ -42,9 +50,9 @@ intake_filter = function(df) {
       "20181025143507", # beta; may not have escaped mozilla?
       "20180926142037" # crashy nightly; got respun
       )),
-    app_build_id >= "20180924100354",
     # FIXME when 65 goes to beta
-    (normalized_channel != "beta") | (app_build_id <= "20181128185223") | (app_build_id >= "20181210000000")
+    (normalized_channel != "beta") | (app_build_id <= "20181128185223") | (app_build_id >= "20181210000000"),
+    app_build_id >= min_build_id[mfr]
   )
 }
 
