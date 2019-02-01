@@ -1,5 +1,4 @@
 ---
-title: "WebRender Status"
 output:
   html_document:
     self_contained: false
@@ -94,6 +93,8 @@ cr_labels = setNames(rep("", length(all_builds)), all_builds)
 label_idx = rep_len(c(TRUE, FALSE, FALSE, FALSE, FALSE), length(all_builds))
 cr_labels[label_idx] = all_builds[label_idx]
 ```
+
+# WebRender Status (`r mfr`)
 
 Last updated: `r last_update` UTC
 
