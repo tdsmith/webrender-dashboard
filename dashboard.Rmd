@@ -754,7 +754,7 @@ P1 = Blocking beta
 
 P2 = Blocking release (being worked on or looking for owners)
 
-P3 = Blocking release (pending queue)
+P3 = Wanted for release, but not blocking
 
 ```{r burndown_p1}
 burndown %>%
@@ -789,7 +789,7 @@ burndown %>%
     expand_limits(y=0)
 ```
 
-[Bugzilla: P3 blockers][p3]
+[Bugzilla: P3 bugs][p3]
 
 
 # Enrollment
