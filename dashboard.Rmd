@@ -112,7 +112,7 @@ burndown %>%
     theme(legend.position="bottom")
 ```
 
-**[P1][p1]**: Blocking beta; **[P2][p2]**: Blocking release (in progress/looking for owners); **[P3][p3]**: Blocking release (in queue)
+**[P1][p1]**: Blocking beta; **[P2][p2]**: Blocking release (being worked on or looking for owners); **[P3][p3]**: Wanted for release, but not blocking
 
 ## Nightly performance
 
