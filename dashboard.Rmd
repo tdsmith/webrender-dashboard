@@ -95,10 +95,15 @@ recent_builds = bind_rows(
 )
 
 all_builds = all_build_df %>% arrange(normalized_channel, app_build_id) %>% pull(app_build_id)
-cr_labels = setNames(rep("", length(all_builds)), all_builds)
-# Sample every 5th build for longitudinal legends
-label_idx = rep_len(c(TRUE, FALSE, FALSE, FALSE, FALSE), length(all_builds))
-cr_labels[label_idx] = all_builds[label_idx]
+
+skip_n = function(n) {
+  function(x) {
+    sparse = setNames(rep("", length(x)), x)
+    label_idx = rep_len(c(TRUE, rep(FALSE, n)), length(x))
+    sparse[label_idx] = x[label_idx]
+    sparse
+  }
+}
 ```
 
 # WebRender Status (`r mfr`)
@@ -210,7 +215,7 @@ slow_content_frame_time_vsync_summary %>%
     facet_grid(~normalized_channel, scales="free_x", space="free_x") +
     geom_ribbon(alpha=0.4) +
     geom_line(aes(color=branch)) +
-    scale_x_discrete(labels=cr_labels) +
+    scale_x_discrete(labels=skip_n(10)) +
     theme(axis.text.x=element_text(angle=30, hjust=1)) +
     labs(title="CONTENT_FRAME_TIME_VSYNC: per-user percent of frames exceeding 200% vsync", x="Build ID", y="Median percentage") +
     coord_cartesian(ylim=c(0, 12))
@@ -250,7 +255,7 @@ perf_medians %>%
     geom_ribbon(alpha=0.3) +
     geom_line(aes(color=branch)) +
     theme(axis.text.x=element_text(angle=30, hjust=1)) +
-    scale_x_discrete(labels=cr_labels) +
+    scale_x_discrete(labels=skip_n(10)) +
     labs(title="FX_TAB_SWITCH_COMPOSITE_E10S_MS [ms]: per-user mean", x="Build ID", y="Median of per-user means")
 ```
 
@@ -285,7 +290,7 @@ perf_medians %>%
     geom_ribbon(alpha=0.3) +
     geom_line(aes(color=branch)) +
     theme(axis.text.x=element_text(angle=30, hjust=1)) +
-    scale_x_discrete(labels=cr_labels) +
+    scale_x_discrete(labels=skip_n(10)) +
     labs(title="FX_PAGE_LOAD_MS_2 [ms]: per-user mean", x="Build ID", y="Median of per-user means")
 ```
 
@@ -337,7 +342,7 @@ perf_medians %>%
     geom_ribbon(alpha=0.3) +
     geom_line(aes(color=branch)) +
     theme(axis.text.x=element_text(angle=30, hjust=1)) +
-    scale_x_discrete(labels=cr_labels) +
+    scale_x_discrete(labels=skip_n(10)) +
     labs(title="CONTENT_FULL_PAINT_TIME [ms]: per-user mean", x="Build ID", y="Median of per-user means")
 ```
 
@@ -348,7 +353,7 @@ slow_content_full_paint_time_summary %>%
     facet_grid(~normalized_channel, scales="free_x", space="free_x") +
     geom_ribbon(alpha=0.3) +
     geom_line(aes(color=branch)) +
-    scale_x_discrete(labels=cr_labels) +
+    scale_x_discrete(labels=skip_n(10)) +
     theme(axis.text.x=element_text(angle=30, hjust=1)) +
     labs(title="CONTENT_FULL_PAINT_TIME: per-user percent of frames exceeding 16ms", x="Build ID", y="Median percentage")
 ```
@@ -412,7 +417,7 @@ perf_medians %>%
     facet_grid(~normalized_channel, scales="free_x", space="free_x") +
     geom_ribbon(alpha=0.3) +
     geom_line(aes(color=branch)) +
-    scale_x_discrete(labels=cr_labels) +
+    scale_x_discrete(labels=skip_n(10)) +
     theme(axis.text.x=element_text(angle=30, hjust=1)) +
     labs(title="CONTENT_PAINT_TIME [ms]: per-user mean", x="Build ID", y="Median of per-user means")
 ```
@@ -425,7 +430,7 @@ paint_time_quantiles %>%
     facet_grid(~normalized_channel, scales="free_x", space="free_x") +
     geom_ribbon(alpha=0.3) +
     geom_line(aes(color=branch)) +
-    scale_x_discrete(labels=cr_labels) +
+    scale_x_discrete(labels=skip_n(10)) +
     theme(axis.text.x=element_text(angle=30, hjust=1)) +
     labs(title="CONTENT_PAINT_TIME [ms]: per-user 99th %ile", x="Build ID", y="Median of per-user p99")
 ```
@@ -437,7 +442,7 @@ slow_content_paint_time_summary %>%
     facet_grid(~normalized_channel, scales="free_x", space="free_x") +
     geom_ribbon(alpha=0.3) +
     geom_line(aes(color=branch)) +
-    scale_x_discrete(labels=cr_labels) +
+    scale_x_discrete(labels=skip_n(10)) +
     theme(axis.text.x=element_text(angle=30, hjust=1)) +
     labs(title="CONTENT_PAINT_TIME: per-user percent of frames exceeding 16ms", x="Build ID", y="Median percentage")
 ```
@@ -497,7 +502,7 @@ slow_content_frame_time_summary %>%
     facet_grid(~normalized_channel, scales="free_x", space="free_x") +
     geom_ribbon(alpha=0.4) +
     geom_line(aes(color=branch)) +
-    scale_x_discrete(labels=cr_labels) +
+    scale_x_discrete(labels=skip_n(10)) +
     theme(axis.text.x=element_text(angle=30, hjust=1)) +
     labs(title="CONTENT_FRAME_TIME: per-user percent of frames exceeding 192% vsync", x="Build ID", y="Median percentage") +
     coord_cartesian(ylim=c(0, 6))
@@ -615,7 +620,7 @@ crashes_per_build %>%
     geom_ribbon(aes(ymin=ymin/usage_hours*1000, ymax=ymax/usage_hours*1000), alpha=0.4) +
     geom_line(aes(color=branch)) +
     coord_cartesian(ylim=c(0, 0.1)*1000) +
-    scale_x_discrete(labels=cr_labels) +
+    scale_x_discrete(labels=skip_n(10)) +
     theme(axis.text.x=element_text(angle=45, hjust=1)) +
     labs(x="Build ID", y="Crash rate", title="Crash rate trend: all crashes (main+content+gpu) per 1000 usage hours")
 ```
@@ -842,7 +847,7 @@ users_by_build %>%
     facet_grid(~branch) +
     geom_col() +
     theme(axis.text.x=element_text(angle=30, hjust=1)) +
-    scale_x_discrete(labels=cr_labels) +
+    scale_x_discrete(labels=skip_n(10)) +
     labs(title="Users per build: nightly", x="Build ID") +
     geom_hline(yintercept=125)
 ```
