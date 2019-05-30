@@ -41,6 +41,13 @@ mfr = sub(".*webrender_([^.]+).sqlite3", "\\1", params$dbname)
 burndown = read_csv("bugzilla.csv")
 
 cache = DBI::dbConnect(SQLite(), dbname=params$dbname)
+users_by_build = tbl(cache, "users_by_build") %>% collect  %>% intake_filter
+
+allowed_builds = bind_rows(
+    users_by_build %>% group_by(normalized_channel, app_build_id) %>% summarize(n=sum(n)) %>% filter(n > 250, normalized_channel == "nightly"),
+    users_by_build %>% group_by(normalized_channel, app_build_id) %>% summarize(n=sum(n)) %>% filter(n > 2500, normalized_channel == "beta")
+  ) %>%
+  select(normalized_channel, app_build_id)
 
 intake_filter = function(df) {
   filter(
@@ -52,7 +59,8 @@ intake_filter = function(df) {
     # FIXME when 65 goes to beta
     (normalized_channel != "beta") | (app_build_id <= "20181128185223") | (app_build_id >= "20181210000000"),
     app_build_id >= min_build_id[mfr]
-  )
+  ) %>%
+  inner_join(allowed_builds)
 }
 
 crashes_per_build = tbl(cache, "crashes_per_build") %>% collect %>% intake_filter
@@ -71,7 +79,6 @@ uri_summary = tbl(cache, "uri_summary") %>% collect
 
 enrollment_summary = tbl(cache, "enrollment_summary") %>% collect
 unenrollment_summary = tbl(cache, "unenrollment_summary") %>% collect
-users_by_build = tbl(cache, "users_by_build") %>% collect  %>% intake_filter
 
 nightly_perf_summary = tbl(cache, "nightly_perf_summary") %>% collect
 beta_perf_summary = tbl(cache, "beta_perf_summary") %>% collect
@@ -836,7 +843,8 @@ users_by_build %>%
     geom_col() +
     theme(axis.text.x=element_text(angle=30, hjust=1)) +
     scale_x_discrete(labels=cr_labels) +
-    labs(title="Users per build: nightly", x="Build ID")
+    labs(title="Users per build: nightly", x="Build ID") +
+    geom_hline(yintercept=125)
 ```
 
 # Colophon
