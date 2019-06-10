@@ -41,7 +41,7 @@ mfr = sub(".*webrender_([^.]+).sqlite3", "\\1", params$dbname)
 burndown = read_csv("bugzilla.csv")
 
 cache = DBI::dbConnect(SQLite(), dbname=params$dbname)
-users_by_build = tbl(cache, "users_by_build") %>% collect  %>% intake_filter
+users_by_build = tbl(cache, "users_by_build") %>% collect
 
 allowed_builds = bind_rows(
     users_by_build %>% group_by(normalized_channel, app_build_id) %>% summarize(n=sum(n)) %>% filter(n > 250, normalized_channel == "nightly"),
