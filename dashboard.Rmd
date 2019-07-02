@@ -43,9 +43,11 @@ burndown = read_csv("bugzilla.csv")
 cache = DBI::dbConnect(SQLite(), dbname=params$dbname)
 users_by_build = tbl(cache, "users_by_build") %>% collect
 
+beta_user_threshold = ifelse(grepl("nvidia", params$dbname), 2500, 1500)
+
 allowed_builds = bind_rows(
     users_by_build %>% group_by(normalized_channel, app_build_id) %>% summarize(n=sum(n)) %>% filter(n > 250, normalized_channel == "nightly"),
-    users_by_build %>% group_by(normalized_channel, app_build_id) %>% summarize(n=sum(n)) %>% filter(n > 2500, normalized_channel == "beta")
+    users_by_build %>% group_by(normalized_channel, app_build_id) %>% summarize(n=sum(n)) %>% filter(n > beta_user_threshold, normalized_channel == "beta")
   ) %>%
   select(normalized_channel, app_build_id)
 
